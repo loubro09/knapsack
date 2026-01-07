@@ -8,7 +8,7 @@ import main.Sack;
 import main.Solution;
 
 /**
- * Greedy.SackSelectionStrategy.RandomSackStrategy selects a random sack that can accommodate the item.
+ * RandomSackStrategy selects a random sack that can accommodate the item.
  */
 public class RandomSackStrategy implements SelectSackForItem {
     private Random random = new Random();

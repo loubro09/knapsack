@@ -33,6 +33,13 @@ public class Solution {
         item.setAssignedSack(sack.getId());
     }
 
+    //Remove item from sack and update sack's current weight and item's assigned sack
+    public void removeItemFromSack(Item item, Sack sack) {
+        sack.getItems().remove(item);
+        sack.setCurrentWeight(sack.getCurrentWeight() - item.getWeight());
+        item.setAssignedSack(-1);
+    }
+
     //Calculate total profit of the solution
     public int getProfit() {
         int profit = 0;

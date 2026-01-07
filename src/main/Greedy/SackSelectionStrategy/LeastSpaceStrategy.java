@@ -6,7 +6,7 @@ import main.Sack;
 import main.Solution;
 
 /**
- * Greedy.SackSelectionStrategy.LeastSpaceStrategy selects the sack that will have the least remaining capacity after adding the item.
+ * LeastSpaceStrategy selects the sack that will have the least remaining capacity after adding the item.
  */
 public class LeastSpaceStrategy implements SelectSackForItem {
     @Override
