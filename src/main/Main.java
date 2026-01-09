@@ -15,14 +15,14 @@ import java.util.List;
 public class Main {
     public static void main(String[] args) {
         //Test case with a single sack, least space strategy, no more fit termination condition
-        System.out.println(" -- Test Single Sack, Least Space, NoMoreFit -- ");
+        /*System.out.println(" -- Test Single Sack, Least Space, NoMoreFit -- ");
         testSingleSack(new LeastSpaceStrategy(), new NoMoreFitCondition());
 
         System.out.println("-----------------------");
 
         //Test case with a single sack, random sack strategy, profit threshold termination condition
         System.out.println(" -- Test Single Sack, Random Sack, Profit Threshold -- ");
-        testSingleSack(new RandomSackStrategy(), new ProfitThresholdCondition(15));
+        testSingleSack(new RandomSackStrategy(), new ProfitThresholdCondition(15));*/
 
         System.out.println("-----------------------");
 
@@ -58,19 +58,29 @@ public class Main {
         System.out.println("\nTest Multiple Sacks:");
 
         List<Item> items = new ArrayList<>();
-        items.add(new Item("Book", 10, 4));
-        items.add(new Item("Computer", 4, 12));
-        items.add(new Item("Pencase", 2, 1));
-        items.add(new Item("Ruler", 1, 1));
-        items.add(new Item("Waterbottle", 2, 2));
-        items.add(new Item("Laptop", 7, 10));
-        items.add(new Item("Headphones", 3, 5));
+        items.add(new Item("Book", 4, 10));
+        items.add(new Item("Laptop", 6, 15));
+        items.add(new Item("Headphones", 2, 6));
+        items.add(new Item("Notebook", 3, 8));
+        items.add(new Item("Camera", 5, 12));
+        items.add(new Item("Water Bottle", 2, 3));
+        items.add(new Item("Tablet", 4, 9));
+        items.add(new Item("Speaker", 3, 20));      // High-profit item
+        items.add(new Item("Mouse", 1, 5));
+        items.add(new Item("Keyboard", 3, 7));
+        items.add(new Item("Charger", 1, 4));
+        items.add(new Item("Headset", 2, 6));
+        items.add(new Item("Smartphone", 2, 12));
+        items.add(new Item("HardDrive", 3, 11));
+        items.add(new Item("CameraLens", 2, 9));
 
         List<Sack> sacks = new ArrayList<>();
-        sacks.add(new Sack(1, 10, new ArrayList<>()));
-        sacks.add(new Sack(2, 8, new ArrayList<>()));
-        sacks.add(new Sack(3, 5, new ArrayList<>()));
-        sacks.add(new Sack(4, 7, new ArrayList<>()));
+        sacks.add(new Sack(1, 8, new ArrayList<>()));   // small
+        sacks.add(new Sack(2, 10, new ArrayList<>()));  // medium
+        sacks.add(new Sack(3, 6, new ArrayList<>()));   // small
+        sacks.add(new Sack(4, 12, new ArrayList<>()));  // large
+        sacks.add(new Sack(5, 15, new ArrayList<>()));  // extra large
+
 
         Solution initialSolution = runGreedy(items, sacks, sackSelectionStrategy, terminationCondition);
         runNeighborhoodSearch(initialSolution, items);
@@ -83,25 +93,28 @@ public class Main {
 
         System.out.println("\n Greedy solution: ");
         solution.printSolution();
-        printUnusedItems(items);
+        printUnusedItems(solution);
 
         return solution;
     }
 
     //Run neighborhood search to improve the solution
     private static void runNeighborhoodSearch(Solution initialSolution, List<Item> items) {
-        NeighborhoodSearch neighborhoodSearch = new NeighborhoodSearch();
+      //  NeighborhoodSearch neighborhoodSearch = new NeighborhoodSearch();
+       // Solution improvedSolution = neighborhoodSearch.improveSolution(initialSolution);
+
+        NeighborhoodSearch2 neighborhoodSearch = new NeighborhoodSearch2();
         Solution improvedSolution = neighborhoodSearch.improveSolution(initialSolution);
 
         System.out.println("\n Neighbourhood search solution: ");
         improvedSolution.printSolution();
-        printUnusedItems(items);
+        printUnusedItems(improvedSolution);
     }
 
     //Print unused items that were not assigned to any sack
-    private static void printUnusedItems(List<Item> items) {
+    private static void printUnusedItems(Solution solution) {
         System.out.println("\nUnused items:");
-        for (Item item : items) {
+        for (Item item : solution.getItems()) {
             if (item.getAssignedSack() == -1) {
                 System.out.println("  Item: " + item.getName() +
                         "\n     Profit = " + String.format("%.2f", item.getProfit()));
