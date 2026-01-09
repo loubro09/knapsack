@@ -11,18 +11,17 @@ import main.Greedy.TerminationCondition.TerminationCondition;
 import java.util.ArrayList;
 import java.util.List;
 
-//TODO: exchange items and sacks in test cases to better ones?
 public class Main {
     public static void main(String[] args) {
         //Test case with a single sack, least space strategy, no more fit termination condition
-        /*System.out.println(" -- Test Single Sack, Least Space, NoMoreFit -- ");
+        System.out.println(" -- Test Single Sack, Least Space, NoMoreFit -- ");
         testSingleSack(new LeastSpaceStrategy(), new NoMoreFitCondition());
 
         System.out.println("-----------------------");
 
         //Test case with a single sack, random sack strategy, profit threshold termination condition
         System.out.println(" -- Test Single Sack, Random Sack, Profit Threshold -- ");
-        testSingleSack(new RandomSackStrategy(), new ProfitThresholdCondition(15));*/
+        testSingleSack(new RandomSackStrategy(), new ProfitThresholdCondition(15));
 
         System.out.println("-----------------------");
 
@@ -59,27 +58,20 @@ public class Main {
 
         List<Item> items = new ArrayList<>();
         items.add(new Item("Book", 4, 10));
-        items.add(new Item("Laptop", 6, 15));
         items.add(new Item("Headphones", 2, 6));
         items.add(new Item("Notebook", 3, 8));
         items.add(new Item("Camera", 5, 12));
         items.add(new Item("Water Bottle", 2, 3));
         items.add(new Item("Tablet", 4, 9));
-        items.add(new Item("Speaker", 3, 20));      // High-profit item
-        items.add(new Item("Mouse", 1, 5));
         items.add(new Item("Keyboard", 3, 7));
         items.add(new Item("Charger", 1, 4));
-        items.add(new Item("Headset", 2, 6));
-        items.add(new Item("Smartphone", 2, 12));
-        items.add(new Item("HardDrive", 3, 11));
-        items.add(new Item("CameraLens", 2, 9));
 
         List<Sack> sacks = new ArrayList<>();
-        sacks.add(new Sack(1, 8, new ArrayList<>()));   // small
-        sacks.add(new Sack(2, 10, new ArrayList<>()));  // medium
-        sacks.add(new Sack(3, 6, new ArrayList<>()));   // small
-        sacks.add(new Sack(4, 12, new ArrayList<>()));  // large
-        sacks.add(new Sack(5, 15, new ArrayList<>()));  // extra large
+        sacks.add(new Sack(1, 8, new ArrayList<>()));
+        sacks.add(new Sack(2, 10, new ArrayList<>()));
+        sacks.add(new Sack(3, 6, new ArrayList<>()));
+        sacks.add(new Sack(4, 12, new ArrayList<>()));
+        sacks.add(new Sack(5, 15, new ArrayList<>()));
 
 
         Solution initialSolution = runGreedy(items, sacks, sackSelectionStrategy, terminationCondition);
@@ -100,10 +92,7 @@ public class Main {
 
     //Run neighborhood search to improve the solution
     private static void runNeighborhoodSearch(Solution initialSolution, List<Item> items) {
-      //  NeighborhoodSearch neighborhoodSearch = new NeighborhoodSearch();
-       // Solution improvedSolution = neighborhoodSearch.improveSolution(initialSolution);
-
-        NeighborhoodSearch2 neighborhoodSearch = new NeighborhoodSearch2();
+        NeighborhoodSearch neighborhoodSearch = new NeighborhoodSearch();
         Solution improvedSolution = neighborhoodSearch.improveSolution(initialSolution);
 
         System.out.println("\n Neighbourhood search solution: ");
@@ -117,7 +106,7 @@ public class Main {
         for (Item item : solution.getItems()) {
             if (item.getAssignedSack() == -1) {
                 System.out.println("  Item: " + item.getName() +
-                        "\n     Profit = " + String.format("%.2f", item.getProfit()));
+                        ", Profit = " + String.format("%.2f", item.getProfit()));
             }
         }
     }
