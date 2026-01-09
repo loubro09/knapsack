@@ -5,141 +5,151 @@ import java.util.List;
 
 public class NeighborhoodSearch2 {
 
+    /**
+     * Improves the given solution using a rotation-based neighborhood search.
+     * The neighborhood considers:
+     * 1. Moving an item from one sack to another.
+     * 2. Evicting another item from the target sack to make room.
+     * 3. Optionally inserting an unused item into the original sack.
+     */
     public Solution improveSolution(Solution solution) {
-
         boolean improvementFound = true;
 
         while (improvementFound) {
             improvementFound = false;
-
             int currentProfit = solution.getProfit();
             int bestProfit = currentProfit;
 
-            Sack bestSource = null;
-            Sack bestTarget = null;
-            Item bestItem = null;
-
-            Sack swapSackA = null;
-            Sack swapSackB = null;
-            Item swapItemA = null;
-            Item swapItemB = null;
-
-            boolean isSwap = false;
+            // Best move variables
+            Item moveItem = null;          // item to move
+            Sack sourceSack = null;
+            Sack targetSack = null;
+            Item evictItem = null;         // item to evict from target sack
+            Item insertUnusedItem = null;  // item to insert into source sack
 
             List<Sack> sacks = solution.getSacks();
             List<Item> allItems = solution.getItems();
 
-            //Single-item move
-            for (Sack sourceSack : sacks) {
-                for (Item item : new ArrayList<>(sourceSack.getItems())) {
-                    for (Sack targetSack : sacks) {
-                        if (sourceSack == targetSack) continue;
+            // Track unused items
+            List<Item> unusedItems = new ArrayList<>();
+            for (Item item : allItems) {
+                if (item.getAssignedSack() == -1) unusedItems.add(item);
+            }
 
-                        if (solution.canItemFitInSack(item, targetSack)) {
+            // --- Explore all rotations ---
+            for (Sack sackA : sacks) {
+                for (Item itemA : new ArrayList<>(sackA.getItems())) {
+                    for (Sack sackB : sacks) {
+                        if (sackA == sackB) continue;
 
-                            solution.removeItemFromSack(item, sourceSack);
-                            solution.addItemToSack(item, targetSack);
+                        // Try direct move
+                        if (solution.canItemFitInSack(itemA, sackB)) {
+                            int trialProfit = currentProfit;
 
-                            int newProfit = solution.getProfit();
-                            if (newProfit > bestProfit) {
-                                bestProfit = newProfit;
-                                bestSource = sourceSack;
-                                bestTarget = targetSack;
-                                bestItem = item;
-                                isSwap = false;
+                            // compute profit if we move itemA
+                            solution.removeItemFromSack(itemA, sackA);
+                            solution.addItemToSack(itemA, sackB);
+                            trialProfit = solution.getProfit();
+
+                            // Check if we can insert unused item into sackA
+                            Item bestInsert = null;
+                            for (Item unused : unusedItems) {
+                                if (solution.canItemFitInSack(unused, sackA)) {
+                                    solution.addItemToSack(unused, sackA);
+                                    int newProfit = solution.getProfit();
+                                    if (newProfit > trialProfit) {
+                                        trialProfit = newProfit;
+                                        bestInsert = unused;
+                                    } else {
+                                        solution.removeItemFromSack(unused, sackA);
+                                    }
+                                }
+                            }
+
+                            if (trialProfit > bestProfit) {
+                                bestProfit = trialProfit;
+                                moveItem = itemA;
+                                sourceSack = sackA;
+                                targetSack = sackB;
+                                evictItem = null;
+                                insertUnusedItem = bestInsert;
                             }
 
                             // rollback
-                            solution.removeItemFromSack(item, targetSack);
-                            solution.addItemToSack(item, sourceSack);
-                        }
-                    }
-                }
-            }
-
-            // Two-item swap
-            for (int i = 0; i < sacks.size(); i++) {
-                Sack sackA = sacks.get(i);
-                for (int j = i + 1; j < sacks.size(); j++) {
-                    Sack sackB = sacks.get(j);
-
-                    for (Item itemA : new ArrayList<>(sackA.getItems())) {
-                        for (Item itemB : new ArrayList<>(sackB.getItems())) {
-
-                            solution.removeItemFromSack(itemA, sackA);
-                            solution.removeItemFromSack(itemB, sackB);
-
-                            if (solution.canItemFitInSack(itemA, sackB)
-                                    && solution.canItemFitInSack(itemB, sackA)) {
-
-                                solution.addItemToSack(itemA, sackB);
-                                solution.addItemToSack(itemB, sackA);
-
-                                int newProfit = solution.getProfit();
-                                if (newProfit > bestProfit) {
-                                    bestProfit = newProfit;
-                                    swapSackA = sackA;
-                                    swapSackB = sackB;
-                                    swapItemA = itemA;
-                                    swapItemB = itemB;
-                                    isSwap = true;
-                                }
-
-                                // rollback add
-                                solution.removeItemFromSack(itemA, sackB);
-                                solution.removeItemFromSack(itemB, sackA);
-                            }
-
-                            // rollback remove
+                            solution.removeItemFromSack(itemA, sackB);
                             solution.addItemToSack(itemA, sackA);
-                            solution.addItemToSack(itemB, sackB);
-                        }
-                    }
-                }
-            }
+                            if (bestInsert != null) solution.removeItemFromSack(bestInsert, sackA);
 
-            // --------------------------
-            // New improvement: insert unused items
-            // --------------------------
-            for (Item item : allItems) {
-                if (item.getAssignedSack() == -1) { // unused
-                    for (Sack sack : sacks) {
-                        if (solution.canItemFitInSack(item, sack)) {
-                            solution.addItemToSack(item, sack);
-                            int newProfit = solution.getProfit();
-                            if (newProfit > bestProfit) {
-                                bestProfit = newProfit;
-                                bestItem = item;
-                                bestSource = null; // item was unused
-                                bestTarget = sack;
-                                isSwap = false;
-                                improvementFound = true;
-                            } else {
-                                // rollback if not better
-                                solution.removeItemFromSack(item, sack);
+                        } else {
+                            // If item doesn't fit, try evicting one item from target sack
+                            for (Item itemB : new ArrayList<>(sackB.getItems())) {
+                                if (itemB.getWeight() >= itemA.getWeight() - (sackB.getCapacity() - sackB.getCurrentWeight())) {
+
+                                    int trialProfit = currentProfit;
+
+                                    solution.removeItemFromSack(itemA, sackA);
+                                    solution.removeItemFromSack(itemB, sackB);
+                                    solution.addItemToSack(itemA, sackB);
+                                    trialProfit = solution.getProfit();
+
+                                    // Check if we can insert unused item into sackA
+                                    Item bestInsert = null;
+                                    for (Item unused : unusedItems) {
+                                        if (solution.canItemFitInSack(unused, sackA)) {
+                                            solution.addItemToSack(unused, sackA);
+                                            int newProfit = solution.getProfit();
+                                            if (newProfit > trialProfit) {
+                                                trialProfit = newProfit;
+                                                bestInsert = unused;
+                                            } else {
+                                                solution.removeItemFromSack(unused, sackA);
+                                            }
+                                        }
+                                    }
+
+                                    if (trialProfit > bestProfit) {
+                                        bestProfit = trialProfit;
+                                        moveItem = itemA;
+                                        sourceSack = sackA;
+                                        targetSack = sackB;
+                                        evictItem = itemB;
+                                        insertUnusedItem = bestInsert;
+                                    }
+
+                                    // rollback
+                                    solution.removeItemFromSack(itemA, sackB);
+                                    solution.addItemToSack(itemA, sackA);
+                                    solution.addItemToSack(itemB, sackB);
+                                    if (bestInsert != null) solution.removeItemFromSack(bestInsert, sackA);
+                                }
                             }
                         }
                     }
                 }
             }
 
-            // Best found move
+            // --- Apply best rotation found ---
             if (bestProfit > currentProfit) {
                 improvementFound = true;
 
-                if (isSwap) {
-                    solution.removeItemFromSack(swapItemA, swapSackA);
-                    solution.removeItemFromSack(swapItemB, swapSackB);
-                    solution.addItemToSack(swapItemA, swapSackB);
-                    solution.addItemToSack(swapItemB, swapSackA);
-                } else {
-                    if (bestSource != null) {
-                        solution.removeItemFromSack(bestItem, bestSource);
-                    }
-                    solution.addItemToSack(bestItem, bestTarget);
+                // Move item
+                if (moveItem != null && sourceSack != null && targetSack != null) {
+                    solution.removeItemFromSack(moveItem, sourceSack);
+                    solution.addItemToSack(moveItem, targetSack);
+                }
+
+                // Evict item
+                if (evictItem != null && targetSack != null) {
+                    solution.removeItemFromSack(evictItem, targetSack);
+                }
+
+                // Insert unused item
+                if (insertUnusedItem != null && sourceSack != null) {
+                    solution.addItemToSack(insertUnusedItem, sourceSack);
                 }
             }
         }
+
         return solution;
     }
 }

@@ -9,7 +9,7 @@ import main.Solution;
 import java.util.List;
 
 /**
- * Greedy.Greedy class implementing a greedy algorithm to solve the knapsack filling problem.
+ * Greedy class implementing a greedy algorithm to solve the knapsack filling problem.
  *
  */
 public class Greedy {
