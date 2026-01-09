@@ -56,7 +56,7 @@ public class Main {
     //Test case with multiple sacks
     private static void testMultipleSacks(SelectSackForItem sackSelectionStrategy, TerminationCondition terminationCondition) {
         System.out.println("\nTest Multiple Sacks:");
-
+/**
         List<Item> items = new ArrayList<>();
         items.add(new Item("Book", 10, 4));
         items.add(new Item("Computer", 4, 12));
@@ -71,6 +71,22 @@ public class Main {
         sacks.add(new Sack(2, 8, new ArrayList<>()));
         sacks.add(new Sack(3, 5, new ArrayList<>()));
         sacks.add(new Sack(4, 7, new ArrayList<>()));
+ **/
+        List<Item> items = new ArrayList<>();
+        items.add(new Item("Book", 4, 10));
+        items.add(new Item("Laptop", 6, 15));
+        items.add(new Item("Headphones", 2, 6));
+        items.add(new Item("Notebook", 3, 8));
+        items.add(new Item("Camera", 5, 12));
+        items.add(new Item("Water Bottle", 2, 3));
+        items.add(new Item("Tablet", 4, 9));
+
+        List<Sack> sacks = new ArrayList<>();
+        sacks.add(new Sack(1, 8, new ArrayList<>()));  // small sack
+        sacks.add(new Sack(2, 10, new ArrayList<>())); // medium
+        sacks.add(new Sack(3, 6, new ArrayList<>()));  // small
+        sacks.add(new Sack(4, 12, new ArrayList<>())); // large
+
 
         Solution initialSolution = runGreedy(items, sacks, sackSelectionStrategy, terminationCondition);
         runNeighborhoodSearch(initialSolution, items);
@@ -90,7 +106,10 @@ public class Main {
 
     //Run neighborhood search to improve the solution
     private static void runNeighborhoodSearch(Solution initialSolution, List<Item> items) {
-        NeighborhoodSearch neighborhoodSearch = new NeighborhoodSearch();
+      //  NeighborhoodSearch neighborhoodSearch = new NeighborhoodSearch();
+       // Solution improvedSolution = neighborhoodSearch.improveSolution(initialSolution);
+
+        NeighborhoodSearch2 neighborhoodSearch = new NeighborhoodSearch2();
         Solution improvedSolution = neighborhoodSearch.improveSolution(initialSolution);
 
         System.out.println("\n Neighbourhood search solution: ");

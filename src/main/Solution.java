@@ -21,6 +21,10 @@ public class Solution {
         return sacks;
     }
 
+    public List<Item> getItems() {
+        return items;
+    }
+
     //Check if an item can fit in a sack
     public boolean canItemFitInSack(Item item, Sack sack) {
         return (sack.getCurrentWeight() + item.getWeight()) <= sack.getCapacity();
