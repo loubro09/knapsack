@@ -1,5 +1,6 @@
 package main;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -15,7 +16,7 @@ public class Sack {
         this.id = id;
         this.capacity = capacity;
         this.currentWeight = 0;
-        this.items = items;
+        this.items = new ArrayList<>();
     }
 
     public int getId() {
@@ -36,4 +37,34 @@ public class Sack {
     public List<Item> getItems() {
         return items;
     }
+
+    public boolean canFit(Item item) {
+        return currentWeight + item.getWeight() <= capacity;
+    }
+
+    public boolean addItem(Item item) {
+        if (!canFit(item)) return false;
+        items.add(item);
+        currentWeight += item.getWeight();
+        item.setAssignedSack(id);
+        return true;
+    }
+
+    public boolean removeItem(Item item) {
+        if (!items.contains(item)) return false;
+        items.remove(item);
+        currentWeight -= item.getWeight();
+        item.setAssignedSack(-1); // mark as unused
+        return true;
+    }
+    public int getRemainingCapacity() {
+        return capacity - currentWeight;
+    }
+
+    public List<Item> copyItems() {
+        return new ArrayList<>(items);
+    }
+
+
+
 }

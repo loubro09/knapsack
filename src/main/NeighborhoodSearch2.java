@@ -6,140 +6,167 @@ import java.util.List;
 public class NeighborhoodSearch2 {
 
     public Solution improveSolution(Solution solution) {
-
         boolean improvementFound = true;
 
         while (improvementFound) {
             improvementFound = false;
-
             int currentProfit = solution.getProfit();
-            int bestProfit = currentProfit;
 
+            // Best move in this iteration
+            int bestProfit = currentProfit;
             Sack bestSource = null;
             Sack bestTarget = null;
-            Item bestItem = null;
-
-            Sack swapSackA = null;
-            Sack swapSackB = null;
-            Item swapItemA = null;
-            Item swapItemB = null;
-
-            boolean isSwap = false;
+            Item bestItemToAdd = null;
+            List<Item> itemsToRemove = new ArrayList<>();
+            // destination sacks aligned by index with itemsToRemove
+            List<Sack> destSacksForRemoved = new ArrayList<>();
 
             List<Sack> sacks = solution.getSacks();
             List<Item> allItems = solution.getItems();
 
-            //Single-item move
-            for (Sack sourceSack : sacks) {
-                for (Item item : new ArrayList<>(sourceSack.getItems())) {
-                    for (Sack targetSack : sacks) {
-                        if (sourceSack == targetSack) continue;
+            // --- 1. Single-item move between sacks ---
+            for (Sack source : sacks) {
+                for (Item item : new ArrayList<>(source.getItems())) {
+                    for (Sack target : sacks) {
+                        if (source == target) continue;
 
-                        if (solution.canItemFitInSack(item, targetSack)) {
-
-                            solution.removeItemFromSack(item, sourceSack);
-                            solution.addItemToSack(item, targetSack);
+                        if (solution.canItemFitInSack(item, target)) {
+                            solution.removeItemFromSack(item, source);
+                            solution.addItemToSack(item, target);
 
                             int newProfit = solution.getProfit();
                             if (newProfit > bestProfit) {
                                 bestProfit = newProfit;
-                                bestSource = sourceSack;
-                                bestTarget = targetSack;
-                                bestItem = item;
-                                isSwap = false;
+                                bestSource = source;
+                                bestTarget = target;
+                                bestItemToAdd = item;
+                                itemsToRemove.clear();
+                                destSacksForRemoved.clear();
                             }
 
                             // rollback
-                            solution.removeItemFromSack(item, targetSack);
-                            solution.addItemToSack(item, sourceSack);
+                            solution.removeItemFromSack(item, target);
+                            solution.addItemToSack(item, source);
                         }
                     }
                 }
             }
 
-            // Two-item swap
-            for (int i = 0; i < sacks.size(); i++) {
-                Sack sackA = sacks.get(i);
-                for (int j = i + 1; j < sacks.size(); j++) {
-                    Sack sackB = sacks.get(j);
+            // --- 2. Insert unused items (with rotation) ---
+            for (Item unused : allItems) {
+                if (unused.getAssignedSack() != -1) continue; // skip used items
 
-                    for (Item itemA : new ArrayList<>(sackA.getItems())) {
-                        for (Item itemB : new ArrayList<>(sackB.getItems())) {
+                for (Sack target : sacks) {
+                    if (solution.canItemFitInSack(unused, target)) {
+                        solution.addItemToSack(unused, target);
+                        int newProfit = solution.getProfit();
+                        if (newProfit > bestProfit) {
+                            bestProfit = newProfit;
+                            bestSource = null;
+                            bestTarget = target;
+                            bestItemToAdd = unused;
+                            itemsToRemove.clear();
+                            destSacksForRemoved.clear();
+                        }
+                        solution.removeItemFromSack(unused, target);
+                    } else {
+                        // Try rotations: remove 1–3 items to fit
+                        List<Item> sackItems = new ArrayList<>(target.getItems());
+                        for (int i = 1; i <= Math.min(3, sackItems.size()); i++) {
+                            List<List<Item>> combos = Utils.getCombinations(sackItems, i);
+                            for (List<Item> combo : combos) {
+                                int totalWeight = combo.stream().mapToInt(Item::getWeight).sum();
+                                if (unused.getWeight() <= totalWeight + target.getRemainingCapacity()) {
+                                    // Try to move removed items elsewhere
+                                    boolean canMoveAll = true;
+                                    List<Sack> originalSacks = new ArrayList<>();
+                                    for (Item rem : combo) {
+                                        Sack movedTo = findSackForItem(solution, rem, target);
+                                        if (movedTo == null) {
+                                            canMoveAll = false;
+                                            break;
+                                        } else {
+                                            originalSacks.add(movedTo);
+                                        }
+                                    }
 
-                            solution.removeItemFromSack(itemA, sackA);
-                            solution.removeItemFromSack(itemB, sackB);
+                                    if (canMoveAll) {
+                                        // Apply move: remove combo
+                                        combo.forEach(it -> solution.removeItemFromSack(it, target));
+                                        // Move removed items elsewhere
+                                        for (int k = 0; k < combo.size(); k++) {
+                                            solution.addItemToSack(combo.get(k), originalSacks.get(k));
+                                        }
+                                        // Add unused item
+                                        solution.addItemToSack(unused, target);
 
-                            if (solution.canItemFitInSack(itemA, sackB)
-                                    && solution.canItemFitInSack(itemB, sackA)) {
+                                        int newProfit = solution.getProfit();
+                                        if (newProfit > bestProfit) {
+                                            bestProfit = newProfit;
+                                            bestSource = null;
+                                            bestTarget = target;
+                                            bestItemToAdd = unused;
+                                            itemsToRemove = new ArrayList<>(combo);
+                                            // store actual moved sacks for applying later (aligned by index)
+                                            destSacksForRemoved = new ArrayList<>(originalSacks);
+                                        }
 
-                                solution.addItemToSack(itemA, sackB);
-                                solution.addItemToSack(itemB, sackA);
-
-                                int newProfit = solution.getProfit();
-                                if (newProfit > bestProfit) {
-                                    bestProfit = newProfit;
-                                    swapSackA = sackA;
-                                    swapSackB = sackB;
-                                    swapItemA = itemA;
-                                    swapItemB = itemB;
-                                    isSwap = true;
+                                        // rollback
+                                        solution.removeItemFromSack(unused, target);
+                                        for (int k = 0; k < combo.size(); k++) {
+                                            solution.removeItemFromSack(combo.get(k), originalSacks.get(k));
+                                            solution.addItemToSack(combo.get(k), target);
+                                        }
+                                    }
                                 }
-
-                                // rollback add
-                                solution.removeItemFromSack(itemA, sackB);
-                                solution.removeItemFromSack(itemB, sackA);
-                            }
-
-                            // rollback remove
-                            solution.addItemToSack(itemA, sackA);
-                            solution.addItemToSack(itemB, sackB);
-                        }
-                    }
-                }
-            }
-
-            // --------------------------
-            // New improvement: insert unused items
-            // --------------------------
-            for (Item item : allItems) {
-                if (item.getAssignedSack() == -1) { // unused
-                    for (Sack sack : sacks) {
-                        if (solution.canItemFitInSack(item, sack)) {
-                            solution.addItemToSack(item, sack);
-                            int newProfit = solution.getProfit();
-                            if (newProfit > bestProfit) {
-                                bestProfit = newProfit;
-                                bestItem = item;
-                                bestSource = null; // item was unused
-                                bestTarget = sack;
-                                isSwap = false;
-                                improvementFound = true;
-                            } else {
-                                // rollback if not better
-                                solution.removeItemFromSack(item, sack);
                             }
                         }
                     }
                 }
             }
 
-            // Best found move
+            // --- 3. Apply best move ---
             if (bestProfit > currentProfit) {
                 improvementFound = true;
 
-                if (isSwap) {
-                    solution.removeItemFromSack(swapItemA, swapSackA);
-                    solution.removeItemFromSack(swapItemB, swapSackB);
-                    solution.addItemToSack(swapItemA, swapSackB);
-                    solution.addItemToSack(swapItemB, swapSackA);
-                } else {
-                    if (bestSource != null) {
-                        solution.removeItemFromSack(bestItem, bestSource);
+                // Case A: rotation-based insertion (remove some from bestTarget and move them elsewhere, then add bestItem)
+                if (bestSource == null && !itemsToRemove.isEmpty()) {
+                    // remove selected items from the target sack first
+                    for (Item it : itemsToRemove) {
+                        solution.removeItemFromSack(it, bestTarget);
                     }
-                    solution.addItemToSack(bestItem, bestTarget);
+                    // move them to their recorded destination sacks
+                    for (int i = 0; i < itemsToRemove.size(); i++) {
+                        Item it = itemsToRemove.get(i);
+                        Sack dest = destSacksForRemoved.get(i);
+                        solution.addItemToSack(it, dest);
+                    }
+                    // finally insert the chosen best item into the freed target sack
+                    solution.addItemToSack(bestItemToAdd, bestTarget);
+                } else {
+                    // Case B: single-item move or simple insertion
+                    if (bestSource != null) {
+                        // move from source to target
+                        solution.removeItemFromSack(bestItemToAdd, bestSource);
+                        solution.addItemToSack(bestItemToAdd, bestTarget);
+                    } else {
+                        // simple insertion into target (previously unused item)
+                        solution.addItemToSack(bestItemToAdd, bestTarget);
+                    }
                 }
             }
         }
+
         return solution;
+    }
+
+    // Find a sack (other than excludeSack) that can fit the item
+    private Sack findSackForItem(Solution solution, Item item, Sack excludeSack) {
+        for (Sack sack : solution.getSacks()) {
+            if (sack != excludeSack && solution.canItemFitInSack(item, sack)) {
+                return sack;
+            }
+        }
+        return null;
     }
 }
